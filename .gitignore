@@ -128,10 +128,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-=======
-*.pyc
-*~
-__pycache__
-.DS_Store
-.env
->>>>>>> Add minimal home page
+
+# database
+*.db
