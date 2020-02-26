@@ -100,7 +100,28 @@ def test_url_for():
 # 使用render_template()函数可以把模板渲染出来,必须传入的参数为模板文件名
 
 @app.route('/')
+# def index():
+#     user = User.query.first() # 读取用户记录
+#     movies = Movie.query.all() # 读取所有电影记录
+#     return render_template("index.html", user=user, movies=movies)
 def index():
-    user = User.query.first() # 读取用户记录
     movies = Movie.query.all() # 读取所有电影记录
-    return render_template("index.html", user=user, movies=movies)
+    return render_template("index.html",movies=movies)
+
+# 错误处理函数
+@app.errorhandler(404)  #传入要处理的错误代码
+# def page_not_found(e):  # 接受异常对象作为参数
+#     user = User.query.first()
+#     # 返回模板和状态码
+#     return render_template('404.html', user=user), 404
+def page_not_found(e):  # 接受异常对象作为参数
+    # 返回模板和状态码
+    return render_template('404.html'), 404
+
+# 模板上下文处理函数
+@app.context_processor
+# 函数名可以随意修改
+def inject_user():
+    user = User.query.first()
+    # 需要返回字典，等同于return {'User':user}
+    return dict(user=user)
