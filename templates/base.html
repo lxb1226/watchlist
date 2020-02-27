@@ -5,6 +5,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-s
 cale=1.0">
+<!--    插入到页面标题上方-->
+    {% for message in get_flashed_messages() %}
+        <div class="alert">{{ message }}</div>
+    {% endfor %}
 <title>{{ user.name }}'s Watchlist</title>
 <link rel="icon" href="{{ url_for('static', filename='images/avatar.ico') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
@@ -20,7 +24,14 @@ cale=1.0">
 <li><a href="{{ url_for('index') }}">Home</a></li>
 </ul>
 </nav>
-{% block content %}{% endblock %}
+{% block content %}
+<h3>Edit item</h3>
+<form method="post">
+    Name <input type="text" name="title" autocomplete="off" required value="{{ movie.title }}">
+    Year <input type="text" name="year" autocomplete="off" required value="{{ movie.year }}">
+    <input class="btn" type="submit" name="submit" value="Update">
+</form>
+{% endblock %}
 <footer>
 <small>&copy; 2018 <a href="http://helloflask.com/tutorial">HelloFlask</a></small>
 </footer>
