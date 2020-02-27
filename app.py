@@ -1,5 +1,7 @@
 from flask  import Flask, url_for, render_template, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy  # 导入扩展类
+from werkzeug.security import generate_password_hash, check_password_hash       # 用于生成和验证密码散列值的函数
+from flask_login import LoginManager,UserMixin,login_user,logout_user,login_required,current_user   #用于实现用户认证
 import os
 import click
 
@@ -7,15 +9,37 @@ app = Flask(__name__)
 # 初始化扩展,传入程序实例app
 db = SQLAlchemy(app)
 
+login_manager = LoginManager(app)   # 实例化扩展类
+# 设置登录视图端点
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+# 创建用户加载回调函数,接受用户ID作为参数
+def load_user(user_id):
+    user = User.query.get(int(user_id))
+    return user
 # 设置数据库URI
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.root_path, 'data.db')
 # 设置签名所需要的的密钥
 app.config['SECRET_KEY'] = 'dev'
 # 创建数据库模型
 # 表名将会是user(自动生成,小写处理)
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)        #主键
-    name = db.Column(db.String(20))         #名字
+# User模型继承UserMixin类
+# 继承这个类会让User类拥有几个用于判断认证状态的属性和方法,其中最常用的属性是is_authenticated属性：如果当前用户已经登录,
+# 那么current.is_authenticated会返回True，否则返回False
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20))
+    username = db.Column(db.String(20))
+    password_hash = db.Column(db.String(20))
+
+    # 用来设置密码的方法，接受密码作为参数
+    def set_password(self,password):
+        self.password_hash = generate_password_hash(password)
+
+    # 用于验证密码的方法，接受密码作为参数
+    def validate_password(self,password):
+        return check_password_hash(self.password_hash, password)
 
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -58,6 +82,26 @@ def forge():
     for m in movies:
         movie = Movie(title=m['title'], year=m['year'])
         db.session.add(movie)
+    db.session.commit()
+    click.echo('Done.')
+
+@app.cli.command()
+@click.option('--username', prompt=True, help='The username userd to login')
+@click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True,help='The password used to login.')
+def admin(username, password):
+    """create User."""
+    db.create_all()
+
+    user = User.query.first()
+    if user is not None:
+        click.echo("Updating user...")
+        user.username = username
+        user.set_password(password)
+    else:
+        click.echo('Creating user...')
+        user = User(username=username, name='Admin')
+        user.set_password(password)
+        db.session.add(user)
     db.session.commit()
     click.echo('Done.')
 
@@ -144,6 +188,7 @@ def inject_user():
 
 
 @app.route('/movie/edit/<int:movie_id>', methods=['GET', 'POST'])
+@login_required
 def edit(movie_id):
     movie = Movie.query.get_or_404(movie_id)
     if request.method == 'POST':
@@ -163,9 +208,54 @@ def edit(movie_id):
     return render_template('edit.html', movie=movie)
 
 @app.route('/movie/delete/<int:movie_id>', methods=['POST'])
+@login_required #登录保护， 添加这个装饰器后，如果未登录的用户访问对应的URL，Flask-Login会把用户重定向到登录页面，并显示一个错误提示
 def delete(movie_id):
     movie = Movie.query.get_or_404(movie_id)
     db.session.delete(movie)
     db.session.commit()
     flash('Item deleted')
     return redirect(url_for('index'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if not username or not password:
+            flash("Invalid input.")
+            return redirect(url_for('login'))
+
+        user = User.query.first()
+        if username == user.username and user.validate_password(password):
+            login_user(user)
+            flash('Login success')
+            return redirect(url_for('index'))
+        flash('Invalid username or password')
+        return redirect(url_for('login'))
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required     # 用于视图保护
+def logout():
+    logout_user()
+    flash('Good bye')
+    return redirect(url_for('index'))
+
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        name = request.form['name']
+
+        if not name or len(name) > 20:
+            flash('Invalid input.')
+            return redirect(url_for('settings'))
+        current_user.name = name
+
+        db.session.commit()
+        flash('Settings updated.')
+        return redirect(url_for('index'))
+    return render_template('settings.html')

@@ -1,28 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-{% block head %}
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-s
+    {% block head %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-s
 cale=1.0">
-<!--    插入到页面标题上方-->
+    <!--    插入到页面标题上方-->
     {% for message in get_flashed_messages() %}
-        <div class="alert">{{ message }}</div>
+    <div class="alert">{{ message }}</div>
     {% endfor %}
-<title>{{ user.name }}'s Watchlist</title>
-<link rel="icon" href="{{ url_for('static', filename='images/avatar.ico') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
-{% endblock %}
+    <title>{{ user.name }}'s Watchlist</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/avatar.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" type="text/css">
+    {% endblock %}
 </head>
 <body>
 <h2>
-<img alt="Avatar" class="avatar" src="{{ url_for('static', filename='images/totoro.ico') }}">
-{{ user.name }}'s Watchlist
+    <img alt="Avatar" class="avatar" src="{{ url_for('static', filename='images/totoro.ico') }}">
+    {{ user.name }}'s Watchlist
 </h2>
 <nav>
-<ul>
-<li><a href="{{ url_for('index') }}">Home</a></li>
-</ul>
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        {% if current_user.is_authenicated %}
+        <li><a href="{{ url_for('settings') }}">Settings</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        {% endif %}
+    </ul>
 </nav>
 {% block content %}
 <h3>Edit item</h3>
@@ -33,7 +39,7 @@ cale=1.0">
 </form>
 {% endblock %}
 <footer>
-<small>&copy; 2018 <a href="http://helloflask.com/tutorial">HelloFlask</a></small>
+    <small>&copy; 2018 <a href="http://helloflask.com/tutorial">HelloFlask</a></small>
 </footer>
 </body>
 </html>
