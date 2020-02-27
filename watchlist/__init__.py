@@ -8,9 +8,9 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 # 设置签名所学要的密钥
-app.config['SECRET_KEY'] = 'dev'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
 # 设置数据库URI
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(os.path.dirname(app.root_path), 'data.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(os.path.dirname(app.root_path), os.getenv('DATABASE_FILE', 'data.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
